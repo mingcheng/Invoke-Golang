@@ -1,6 +1,8 @@
 # Invoke-Golang ，针对 Windows 的 Golang 多版本管理工具
 
-这是使用 PowerShell 编写的针对 Windows 平台的 Golang 多版本管理工具，具有指定版本下载、安装、卸载等功能。
+![screenshots.png](./screenshots.png)
+
+这是使用 PowerShell 编写的针对 Windows 平台的 Golang 多版本管理工具，具有指定版本下载、安装、卸载等功能，[与另外个 Golang 版本管理工具 g 高度兼容](https://github.com/voidint/g)。
 
 ## 更新记录 
 
