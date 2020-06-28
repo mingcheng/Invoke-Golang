@@ -1,0 +1,6 @@
+{
+    "powershell.buttons.showPanelMovementButtons": true,
+    "powershell.codeFormatting.preset": "Stroustrup",
+    "powershell.pester.debugOutputVerbosity": "Normal",
+    "workbench.colorTheme": "Solarized Dark"
+}
