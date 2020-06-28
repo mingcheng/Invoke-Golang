@@ -2,25 +2,25 @@
 .SYNOPSIS
 
 Download And Switch Golang Versions
- 
+
 Author: mingcheng (https://github.com/mingcheng/Invoke-Golang)
-License: MIT
- 
+License: GPL
+
 .DESCRIPTION
 
 This PowerShell script to find and install golang package from golang original website.
- 
+
 .EXAMPLE
- 
+
 After `Import-Module .\Invoke-Golang.psm1`, you can use Invoke-Golang cmdlet within below commands:
 
 List remote avaiable versions or local installed package
 
-> Invoke-Golang -List Remote 
+> Invoke-Golang -List Remote
 
 or
 
-> Invoke-Golang -List Remote 
+> Invoke-Golang -List Remote
 
 Download(do not install) golang package specified version
 
@@ -28,15 +28,15 @@ Download(do not install) golang package specified version
 
 Download and install specified version of golang package
 
-> Invoke-Golang -Install 1.14.4 
+> Invoke-Golang -Install 1.14.4
 
-Remove specified golang package 
+Remove specified golang package
 
 > Invoke-Golang -Remove 1.12.17
 #>
 
 # Set Golang Envirment
-function Set-Envirment {
+function Invoke-GolangEnvirment {
   $GolangDirectory = "${HOME}/.g"
 
   if (-not (Test-Path -Path $GolangDirectory -PathType Container)) {
@@ -53,13 +53,13 @@ function Set-Envirment {
   [Environment]::SetEnvironmentVariable("GOROOT", "${GolangDirectory}/go", $User)
 }
 
-function Test-Install([Parameter(Mandatory = $true)] [ValidatePattern('\d+\.\d+\.*\d*')] [string] $Version) {
+function Test-GolangInstall([Parameter(Mandatory = $true)] [ValidatePattern('\d+\.\d+\.*\d*')] [string] $Version) {
   $Path = "${HOME}/.g/versions/${Version}"
   return (Test-Path -Path $Path -PathType Container)
 }
 
-function Get-Current {
-  try {  
+function Get-GolangCurrent {
+  try {
     $Item = Get-Item "${HOME}/.g/go" -ErrorAction SilentlyContinue
     $Target = [System.IO.Path]::GetFileName($Item.Target)
 
@@ -76,7 +76,7 @@ function Get-Current {
   }
 }
 
-function Get-Remote {
+function Get-GolangRemotePackage {
   $Uri = "https://golang.org/dl/"
   $TimeoutSec = 10
 
@@ -89,9 +89,8 @@ function Get-Remote {
 
   Write-Debug "Get golang package list form uri ${Uri} in timeout ${TimeoutSec}"
   try {
-    $Response = Invoke-WebRequest -Uri $Uri -TimeoutSec $TimeoutSec -UseDefaultCredentials -ErrorAction Stop
+    $Response = Invoke-WebRequest -Uri $Uri -TimeoutSec $TimeoutSec -UseDefaultCredentials
     if ($Response.StatusCode -eq 200) {
-      # New-Item -Path "web.html" -Value $response.Content -Force -Verbose
       $result = @()
       $response.Links | Where-Object {
         $_.href -like "https://*windows-amd64.zip" -and $_.class -eq "download"
@@ -106,7 +105,7 @@ function Get-Remote {
 
       if ($result.Count -gt 0) {
         $result | ForEach-Object {
-          if (Test-Install($_.Version)) {
+          if (Test-GolangInstall($_.Version)) {
             Write-Host -ForegroundColor Red "*"$_.Version
           }
           else {
@@ -128,12 +127,11 @@ function Get-Remote {
   }
 }
 
-function Get-Local {
-  $Target = Get-Current
+function Get-GolangLocalPackage {
+  $Target = Get-GolangCurrent
 
   try {
-    Get-ChildItem -Path "${HOME}/.g/versions" -Directory -Depth 0 -ErrorAction SilentlyContinue
-    | ForEach-Object {
+    Get-ChildItem -Path "${HOME}/.g/versions" -Directory -Depth 0 -ErrorAction SilentlyContinue | ForEach-Object {
       if ($Target -eq $_.Name) {
         Write-Host -ForegroundColor Red "*${Target}"
       }
@@ -147,7 +145,7 @@ function Get-Local {
   }
 }
 
-function Get-Package {
+function Get-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
     [ValidatePattern('\d+\.\d+\.*\d*')]
@@ -155,7 +153,7 @@ function Get-Package {
     $Version
   )
 
-  if (Test-Install($Version)) {
+  if (Test-GolangInstall($Version)) {
     Write-Debug "${Version} is already downloaded"
     return
   }
@@ -175,7 +173,7 @@ function Get-Package {
       Invoke-WebRequest -Uri $Uri -OutFile $Outfile -UseDefaultCredentials
     }
     catch {
-      Remove-Package -Version $Version
+      Remove-GolangPackage -Version $Version
       Write-Error "Download packge is failed, please check the network."
       return
     }
@@ -184,7 +182,7 @@ function Get-Package {
   try {
     if (-not (Test-Path -PathType Container -Path $DestinationPath)) {
       Write-Debug "${DestinationPath} not exists, try to create"
-      New-Item -Path $DestinationPath -ItemType Directory -Force 
+      New-Item -Path $DestinationPath -ItemType Directory -Force
     }
 
     # Exanpd downloaded golang package to destination path
@@ -192,18 +190,18 @@ function Get-Package {
 
     # Move to right destination and doing some cleanup
     if (Test-Path -Path "${DestinationPath}/go" -PathType Container) {
-      Move-Item -Path "${DestinationPath}/go" -Destination "${DestinationPath}/${Version}" -Force  
+      Move-Item -Path "${DestinationPath}/go" -Destination "${DestinationPath}/${Version}" -Force
     }
 
     Write-Debug "Get ${Version} is finished, everything looks fine."
   }
   catch {
-    Remove-Package -Version $Version
+    Remove-GolangPackage -Version $Version
     throw "Expand golang packge with error, abort."
   }
 }
 
-function Install-Package {
+function Install-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
     [ValidatePattern('\d+\.\d+\.*\d*')]
@@ -211,9 +209,9 @@ function Install-Package {
     $Version
   )
 
-  Set-Envirment | Out-Null
+  Invoke-GolangEnvirment | Out-Null
 
-  if (-not (Test-Install($Version))) {
+  if (-not (Test-GolangInstall($Version))) {
     Get-Package -Version $Version
   }
 
@@ -230,7 +228,7 @@ function Install-Package {
   }
 }
 
-function Remove-Package {
+function Remove-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
     [ValidatePattern('\d+\.\d+\.*\d*')]
@@ -246,7 +244,7 @@ function Remove-Package {
       Remove-Item -Path $Outfile -Confirm:$false -Force
     }
 
-    if (Test-Install($Version)) {
+    if (Test-GolangInstall($Version)) {
       Remove-Item -Path "${HOME}/.g/versions/${Version}" -Recurse -Force -Confirm:$false
     }
 
@@ -257,6 +255,36 @@ function Remove-Package {
   }
 }
 
+
+<#
+.SYNOPSIS
+
+Download And Switch Golang Versions
+
+Author: mingcheng (https://github.com/mingcheng/Invoke-Golang)
+License: GPL
+
+.DESCRIPTION
+
+This PowerShell script to find and install golang package from golang original website.
+
+.PARAMETER List
+
+`Remote` list avaiable packages from offical golang website
+`Local` list local install packages
+
+.PARAMETER Get
+
+Get and do not install golang package
+
+.PARAMETER Install
+
+Get and install golang package
+
+.PARAMETER Remove
+
+Remove installed golang package
+#>
 Function Invoke-Golang {
   [CmdletBinding()]
 
@@ -284,26 +312,26 @@ Function Invoke-Golang {
 
   switch ($List) {
     "Remote" {
-      Get-Remote
+      Get-GolangRemotePackage
       return
     }
 
     "Local" {
-      Get-Local
+      Get-GolangLocalPackage
       return
     }
   }
 
   if ($Get -ne "") {
-    Get-Package -Version $Get
+    Get-GolangPackage -Version $Get
   }
 
   if ($Install -ne "") {
-    Install-Package  -Version $Install
+    Install-GolangPackage  -Version $Install
   }
 
   if ($Remove -ne "") {
-    Remove-Package -Version $Remove
+    Remove-GolangPackage -Version $Remove
   }
 }
 
