@@ -72,7 +72,7 @@ function Get-GolangCurrent {
     }
   }
   catch {
-    ""
+    throw $_
   }
 }
 
@@ -93,7 +93,7 @@ function Get-GolangRemotePackage {
     if ($Response.StatusCode -eq 200) {
       $result = @()
       $response.Links | Where-Object {
-        $_.href -like "https://*windows-amd64.zip" -and $_.class -eq "download"
+        $_.href -like "/dl/go*windows-amd64.zip" -and $_.class -eq "download"
       } | ForEach-Object {
         if ( $_.href -match "\/go(\d+\.*\d+\.*\d*).windows-") {
           $obj = New-Object System.Object
