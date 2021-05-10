@@ -8,22 +8,10 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
-[*.ps1]
-indent_style = space
-indent_size = 2
-\
-[*.psm1]
+[*.{ps1,psm1},*.json,.travis.yml]
 indent_style = space
 indent_size = 2
 
 [Makefile]
 indent_style = tab
 indent_size = 4
-
-[.travis.yml]
-indent_style = space
-indent_size = 2
-
-[*.json]
-indent_style = space
-indent_size = 2

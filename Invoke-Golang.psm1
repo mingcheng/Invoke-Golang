@@ -48,6 +48,7 @@ function Invoke-GolangEnvirment {
   if (!(";$Path;".ToLower() -like "*;${GolangDirectory}/go/bin;*".ToLower())) {
     [Environment]::SetEnvironmentVariable('Path', "${GolangDirectory}/go/bin;$Path", $User)
     $Env:Path += ";${GolangDirectory}/go/bin"
+    $Env:Path += ";${HOME}/go/bin"
   }
 
   [Environment]::SetEnvironmentVariable("GOROOT", "${GolangDirectory}/go", $User)
@@ -159,6 +160,8 @@ function Get-GolangPackage {
   }
 
   $Uri = "https://dl.google.com/go/go${Version}.windows-amd64.zip"
+  # $Uri = "https://gomirrors.org/dl/go/go${Version}.windows-amd64.zip"
+
   $Outfile = $HOME + "/.g/downloads/" + "go${Version}.windows-amd64.zip"
   $DestinationPath = $HOME + "/.g/versions"
 
@@ -170,6 +173,7 @@ function Get-GolangPackage {
   if (-not (Test-Path -Path $Outfile -PathType Leaf)) {
     try {
       Write-Debug "Get package from ${Uri}"
+      # $ProgressPreference = 'SilentlyContinue'
       Invoke-WebRequest -Uri $Uri -OutFile $Outfile -UseDefaultCredentials
     }
     catch {
