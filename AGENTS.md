@@ -1,0 +1,7 @@
+# Agent Guidelines
+
+- This is a Windows-focused PowerShell Go version manager. Keep changes within that scope unless cross-platform support is explicitly requested. See [README.md](README.md) for usage and the documented environment override.
+- Keep `Invoke-Golang` as the only exported function in `Invoke-Golang.psm1`; its helper functions are internal. Follow the existing two-space PowerShell indentation in [.editorconfig](.editorconfig).
+- Installation downloads Windows amd64 archives into `~/.g/downloads`, extracts versions under `~/.g/versions`, links `~/.g/go` to the selected version, and changes the user `PATH` and `GOROOT`. Check these effects when changing install, switch, or removal behavior.
+- `Test.ps1` is a networked, state-changing integration script: it downloads, installs, and removes Go 1.14.4 in the user's home directory. Do not run it as a routine check; use isolated fixtures or mocks for automated validation, and run it only when its effects are explicitly acceptable.
+- `mise.toml` provisions PowerShell; there is no configured build or isolated test suite. For a non-mutating check, import the module in PowerShell and inspect its exported commands. Do not assume the documented install flow works without testing it: `Install-GolangPackage` currently calls `Get-Package` instead of the module's `Get-GolangPackage` helper.

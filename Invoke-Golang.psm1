@@ -54,26 +54,15 @@ function Invoke-GolangEnvirment {
   [Environment]::SetEnvironmentVariable("GOROOT", "${GolangDirectory}/go", $User)
 }
 
-function Test-GolangInstall([Parameter(Mandatory = $true)] [ValidatePattern('\d+\.\d+\.*\d*')] [string] $Version) {
+function Test-GolangInstall([Parameter(Mandatory = $true)] [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $Version) {
   $Path = "${HOME}/.g/versions/${Version}"
   return (Test-Path -Path $Path -PathType Container)
 }
 
 function Get-GolangCurrent {
-  try {
-    $Item = Get-Item "${HOME}/.g/go" -ErrorAction SilentlyContinue
-    $Target = [System.IO.Path]::GetFileName($Item.Target)
-
-    $Check = (go version  | Select-String -Pattern $Target)
-    if ($Check.Pattern -eq $Target) {
-      return $Target
-    }
-    else {
-      throw "Not found"
-    }
-  }
-  catch {
-    throw $_
+  $Item = Get-Item -LiteralPath "${HOME}/.g/go" -ErrorAction SilentlyContinue
+  if ($Item -and $Item.LinkType -eq 'SymbolicLink') {
+    return [System.IO.Path]::GetFileName($Item.Target)
   }
 }
 
@@ -149,7 +138,7 @@ function Get-GolangLocalPackage {
 function Get-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Version
   )
@@ -208,34 +197,36 @@ function Get-GolangPackage {
 function Install-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Version
   )
 
-  Invoke-GolangEnvirment | Out-Null
+  if (-not (Test-GolangInstall($Version))) {
+    Get-GolangPackage -Version $Version
+  }
 
   if (-not (Test-GolangInstall($Version))) {
-    Get-Package -Version $Version
+    throw "Go ${Version} is not installed; cannot switch versions."
   }
+
+  Invoke-GolangEnvirment | Out-Null
 
   Write-Debug "Create symbolic links"
   New-Item -ItemType SymbolicLink -Path "${HOME}/.g/go" -Value "${HOME}/.g/versions/${Version}" -Force | Out-Null
 
-  # Check
-  $Check = (go version  | Select-String -Pattern $Version)
-  if ($Check.Pattern -eq $Version) {
+  if ((Get-GolangCurrent) -eq $Version) {
     "Install ${Version} is finished"
   }
   else {
-    Write-Error "Failed"
+    throw "Failed to switch to Go ${Version}."
   }
 }
 
 function Remove-GolangPackage {
   Param (
     [Parameter(Mandatory = $true)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Version
   )
@@ -299,17 +290,17 @@ Function Invoke-Golang {
     $List,
 
     [Parameter(Mandatory = $false)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Install,
 
     [Parameter(Mandatory = $false)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Remove,
 
     [Parameter(Mandatory = $false)]
-    [ValidatePattern('\d+\.\d+\.*\d*')]
+    [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]
     $Get
   )

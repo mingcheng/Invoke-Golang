@@ -1,0 +1,43 @@
+name: PowerShell CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install check tools
+        shell: pwsh
+        run: |
+          Install-Module Pester -MinimumVersion 5.0.0 -MaximumVersion 5.99.99 -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Check module and scripts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($file in (Get-ChildItem -Path . -Recurse -File -Include *.ps1,*.psm1,*.psd1)) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$errors)
+            if ($errors) { throw "$($file.FullName): $($errors[0])" }
+          }
+          $issues = @(Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          if ($issues.Count) {
+            $issues | Format-Table RuleName, ScriptName, Line, Message -Wrap
+            throw 'PSScriptAnalyzer found issues.'
+          }
+          Import-Module ./Invoke-Golang.psd1 -Force
+          $exports = @((Get-Module Invoke-Golang).ExportedCommands.Keys)
+          if ($exports.Count -ne 1 -or $exports[0] -ne 'Invoke-Golang') { throw 'Unexpected module exports.' }
+
+      - name: Run isolated tests
+        shell: pwsh
+        run: |
+          $result = Invoke-Pester -Path ./tests -PassThru
+          if ($result.FailedCount -or $result.FailedBlocksCount) { exit 1 }
